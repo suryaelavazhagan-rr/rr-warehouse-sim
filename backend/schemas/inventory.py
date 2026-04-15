@@ -7,7 +7,7 @@ from pydantic import BaseModel
 class InventoryCreate(BaseModel):
     item_id: uuid.UUID
     quantity: int
-    location: str  # required in schema — Bug 2 is frontend-only (shows as optional)
+    location: str
 
 
 class InventoryUpdate(BaseModel):

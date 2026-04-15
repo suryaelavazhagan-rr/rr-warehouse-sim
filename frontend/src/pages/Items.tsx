@@ -117,7 +117,6 @@ export function Items() {
                 {error}
               </div>
             )}
-            {/* BUG 1: No maxLength on name field — backend enforces 50 chars */}
             <input
               placeholder="Item name"
               value={form.name}

@@ -64,12 +64,7 @@ async def _transition(robot_id: uuid.UUID, new_status: RobotStatus, task_id=None
 
 
 async def _simulate_travel():
-    """
-    Normal travel: 2–4 seconds.
-    BUG 4: ~20% probability of lingering 3–5x longer than normal.
-    The robot is NOT in an error state — it just takes much longer.
-    No flag is emitted to indicate this is abnormal.
-    """
+    """Simulate robot travel time between positions."""
     normal_time = random.uniform(TRAVEL_MIN, TRAVEL_MAX)
     if random.random() < 0.20:
         await asyncio.sleep(normal_time * random.uniform(3, 5))
@@ -107,18 +102,12 @@ async def _go_to_rest(robot_id: uuid.UUID):
 
 
 async def _check_battery_and_route(robot_id: uuid.UUID):
-    """
-    Route robot after completing a task.
-    BUG 5: phantom charge trigger — fires not just at threshold,
-    but also near multiples of threshold (e.g. ~40%, ~60%, ~80% when threshold=20).
-    Never triggers at 100%.
-    """
+    """Route robot after completing a task — charge if needed, rest if queue is empty."""
     async with AsyncSessionLocal() as db:
         robot = await db.get(Robot, robot_id)
         battery = robot.battery_level
         threshold = settings.BATTERY_CHARGE_THRESHOLD
 
-        # BUG 5: modulo check causes phantom triggers at multiples of threshold
         should_charge = (battery < threshold) or (
             battery % threshold < 2.0 and battery < 99.0
         )
@@ -201,14 +190,14 @@ async def run_robot(robot_id: uuid.UUID):
 
         # Execute: MOVING_TO_PICK → PICKING_ITEM → PICKED_ITEM → MOVING_TO_DROP → DROPPING_ITEM
         await _transition(robot_id, RobotStatus.MOVING_TO_PICK, task_id)
-        await _simulate_travel()  # BUG 4 here
+        await _simulate_travel()
 
         await _transition(robot_id, RobotStatus.PICKING_ITEM, task_id)
         await asyncio.sleep(PICK_TIME)
 
         await _transition(robot_id, RobotStatus.PICKED_ITEM, task_id)
         await _transition(robot_id, RobotStatus.MOVING_TO_DROP, task_id)
-        await _simulate_travel()  # BUG 4 here
+        await _simulate_travel()
 
         await _transition(robot_id, RobotStatus.DROPPING_ITEM, task_id)
         await asyncio.sleep(DROP_TIME)
@@ -238,7 +227,7 @@ async def run_robot(robot_id: uuid.UUID):
 
             await finalize_order(order_id, db)
 
-        # Battery routing after task (BUG 5 lives here)
+        # Battery routing after task
         await _check_battery_and_route(robot_id)
 
 

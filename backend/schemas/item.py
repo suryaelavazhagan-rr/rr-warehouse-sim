@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class ItemCreate(BaseModel):
-    name: str  # intentionally NO max_length — Bug 1 lives in frontend only
+    name: str
     sku: str
     description: Optional[str] = None
 

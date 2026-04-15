@@ -57,7 +57,7 @@ export function Inventory() {
       if (editing) {
         await inventoryApi.update(editing.id, { quantity: Number(form.quantity), location: form.location || undefined })
       } else {
-        // BUG 2: location is passed as-is — if empty, backend returns 422
+        // location is passed as-is
         await inventoryApi.create({
           item_id: form.item_id,
           quantity: Number(form.quantity),
@@ -155,7 +155,6 @@ export function Inventory() {
               onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
               style={inputStyle}
             />
-            {/* BUG 2: Location looks optional — no asterisk, no required attr */}
             <input
               placeholder="Location (optional)"
               value={form.location}

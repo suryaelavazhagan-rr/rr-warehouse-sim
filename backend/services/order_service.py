@@ -87,7 +87,7 @@ async def create_order(data: OrderCreate, db: AsyncSession) -> Order:
 
 
 async def finalize_order(order_id: uuid.UUID, db: AsyncSession):
-    """Called after each task completes. Checks if order is done. BUG 3 lives here."""
+    """Called after each task completes. Checks if all lines are resolved and updates order status."""
     result = await db.execute(select(OrderLine).where(OrderLine.order_id == order_id))
     lines = result.scalars().all()
 
@@ -109,7 +109,6 @@ async def finalize_order(order_id: uuid.UUID, db: AsyncSession):
         await db.commit()
         await publish_order_event(order_id, "ORDER_COMPLETE", "All items fulfilled")
     elif any_fulfilled and any_unfulfilled:
-        # BUG 3: Should be PARTIAL — intentionally set to FAILED
         order.status = OrderStatus.FAILED
         await db.commit()
         await publish_order_event(
