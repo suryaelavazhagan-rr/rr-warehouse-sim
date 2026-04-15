@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: warehouse
+      POSTGRES_USER: rr
+      POSTGRES_PASSWORD: rr
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rr"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rr:rr@postgres:5432/warehouse
+      ROBOT_COUNT: ${ROBOT_COUNT:-3}
+      BATTERY_DRAIN_RATE: ${BATTERY_DRAIN_RATE:-0.001}
+      BATTERY_CHARGE_THRESHOLD: ${BATTERY_CHARGE_THRESHOLD:-20}
+      INVENTORY_SHORTFALL_MODE: ${INVENTORY_SHORTFALL_MODE:-partial}
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3001}:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
